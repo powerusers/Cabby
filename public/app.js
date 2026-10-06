@@ -20,7 +20,6 @@
   const operatorPanel = document.getElementById('operator-panel');
   const operatorForm = document.getElementById('operator-form');
   const tripForm = document.getElementById('trip-form');
-  const ticket = document.getElementById('receipt');
 
   let operator = null;
   let receiptId = CabbyFormat.makeReceiptId();
@@ -113,11 +112,6 @@
     }
   }
 
-  function styleValue() {
-    const selected = tripForm.querySelector('input[name="style"]:checked');
-    return selected ? selected.value : 'ola';
-  }
-
   function setText(id, value, placeholder) {
     const el = document.getElementById(id);
     if (value) {
@@ -135,7 +129,6 @@
     const whenValue = document.getElementById('tripAt').value;
     const whenDate = whenValue ? new Date(whenValue) : new Date();
     return {
-      style: styleValue(),
       source: document.getElementById('source').value.trim(),
       destination: document.getElementById('destination').value.trim(),
       distanceKm: distance === '' ? null : Number(distance),
@@ -151,28 +144,24 @@
   function renderPreview() {
     const trip = tripDraft();
     const currency = operator?.currency || 'INR';
-    ticket.classList.toggle('ola', trip.style === 'ola');
-    ticket.classList.toggle('uber', trip.style === 'uber');
     document.getElementById('prev-name').textContent = operator?.businessName || 'Your cab';
     document.getElementById('prev-id').textContent = trip.receiptId;
-    const when = CabbyFormat.formatWhen(trip.tripAt, trip.timeZone, trip.style);
-    document.getElementById('prev-when').textContent = trip.style === 'uber' ? `${when.day}\n${when.time}` : when.line;
-    document.getElementById('prev-thanks').textContent = trip.customerName
-      ? `Thanks for riding, ${trip.customerName}`
-      : 'Thanks for riding';
-    document.getElementById('prev-drop-label').textContent = trip.style === 'uber' ? 'Dropoff' : 'Drop';
+    const when = CabbyFormat.formatWhen(trip.tripAt, trip.timeZone);
+    document.getElementById('prev-when').textContent = when.line;
     setText('prev-source', trip.source, 'Pickup location');
     setText('prev-dest', trip.destination, 'Drop location');
     document.getElementById('prev-distance').textContent =
-      trip.distanceKm > 0 ? CabbyFormat.formatDistance(trip.distanceKm, trip.style) : '—';
-    const money = trip.amount > 0 ? CabbyFormat.formatMoney(trip.amount, currency) : '—';
-    document.getElementById('prev-fare').textContent = money;
-    document.getElementById('prev-total').textContent = money;
+      trip.distanceKm > 0 ? CabbyFormat.formatDistance(trip.distanceKm) : '—';
+    const parts = trip.amount > 0 ? CabbyFormat.splitFare(trip.amount) : null;
+    const money = (value) => CabbyFormat.formatMoney(value, currency);
+    document.getElementById('prev-fare').textContent = parts ? money(parts.tripFare) : '—';
+    document.getElementById('prev-gst').textContent = parts ? money(parts.gst) : '—';
+    document.getElementById('prev-total').textContent = parts ? money(parts.total) : '—';
     document.getElementById('prev-paid').textContent = `Paid via ${trip.paymentMethod}`;
     document.getElementById('amount-prefix').textContent = CabbyFormat.currencyPrefix(currency);
 
     const rider = document.getElementById('rider');
-    rider.classList.toggle('hidden', !(trip.style === 'ola' && trip.customerName));
+    rider.classList.toggle('hidden', !trip.customerName);
     document.getElementById('prev-rider').textContent = trip.customerName;
 
     const vehicle = [operator?.vehicleModel, operator?.vehicleNumber].filter(Boolean).join(' · ');
@@ -204,12 +193,7 @@
   }
 
   function restoreTripPreferences() {
-    const style = localStorage.getItem('cabby.style');
     const payment = localStorage.getItem('cabby.payment');
-    if (style === 'ola' || style === 'uber') {
-      const input = tripForm.querySelector(`input[name="style"][value="${style}"]`);
-      if (input) input.checked = true;
-    }
     if (payment) document.getElementById('paymentMethod').value = payment;
     document.getElementById('tripAt').value = localInputValue();
   }
@@ -262,7 +246,6 @@
     button.disabled = true;
     button.textContent = 'Preparing PDF…';
     try {
-      localStorage.setItem('cabby.style', trip.style);
       localStorage.setItem('cabby.payment', trip.paymentMethod);
       const res = await api('/api/receipts', { method: 'POST', json: trip });
       if (!res.ok) {

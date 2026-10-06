@@ -8,7 +8,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { normalizeOperator, normalizeTrip } = require('../lib/validate');
-const { formatMoney, formatDistance } = require('../public/format');
+const { formatMoney, formatDistance, splitFare } = require('../public/format');
 
 process.env.DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'cabby-'));
 delete process.env.APP_PIN;
@@ -30,7 +30,6 @@ const operatorInput = {
 
 function tripInput(overrides = {}) {
   return {
-    style: 'ola',
     source: 'Dadar West, Mumbai',
     destination: 'Bandra West, Mumbai',
     distanceKm: 11.5,
@@ -79,11 +78,18 @@ function pdfPages(buffer) {
   return match ? Number(match[1]) : 0;
 }
 
-test('formats money and distance', () => {
+test('formats money and splits an inclusive total into fare plus 5% GST', () => {
   assert.match(formatMoney(486, 'INR'), /486\.00/);
-  assert.equal(formatDistance(11.5, 'ola'), '11.5 km');
-  assert.equal(formatDistance(1, 'uber'), '1 kilometer');
-  assert.equal(formatDistance(11.5, 'uber'), '11.5 kilometers');
+  assert.equal(formatDistance(11.5), '11.5 km');
+  const parts = splitFare(486);
+  assert.equal(parts.tripFare, 462.86);
+  assert.equal(parts.gst, 23.14);
+  assert.equal(parts.total, 486);
+  assert.equal(Math.round((parts.tripFare + parts.gst) * 100) / 100, parts.total);
+  const larger = splitFare(1250.5);
+  assert.equal(larger.tripFare, 1190.95);
+  assert.equal(larger.gst, 59.55);
+  assert.equal(larger.total, 1250.5);
 });
 
 test('rejects incomplete operator and trip details', () => {
@@ -107,11 +113,13 @@ test('serves the desk and health check', async () => {
   const html = await home.text();
   assert.match(html, /New receipt/);
   assert.match(html, /Download PDF/);
+  assert.match(html, /GST 5%/);
+  assert.doesNotMatch(html, /Ola style|Uber style/);
   const config = await request('/api/config');
   assert.deepEqual(await config.json(), { pinRequired: false });
 });
 
-test('saves operator details once and downloads both receipt styles', async () => {
+test('saves operator details once and downloads a receipt with GST', async () => {
   const empty = await request('/api/receipts', { method: 'POST', json: tripInput() });
   assert.equal(empty.status, 400);
 
@@ -123,29 +131,28 @@ test('saves operator details once and downloads both receipt styles', async () =
   const again = await request('/api/operator');
   assert.equal((await again.json()).operator.city, 'Mumbai');
 
-  for (const style of ['ola', 'uber']) {
-    const res = await request('/api/receipts', { method: 'POST', json: tripInput({ style }) });
-    assert.equal(res.status, 200);
-    assert.match(res.headers.get('content-type'), /application\/pdf/);
-    assert.match(res.headers.get('content-disposition'), /Cabby-CB261006-123456\.pdf/);
-    const pdf = Buffer.from(await res.arrayBuffer());
-    assert.equal(pdf.subarray(0, 5).toString(), '%PDF-');
-    assert.equal(pdfPages(pdf), 1);
-    const text = pdfText(pdf);
-    assert.match(text, /Harbour Line Cabs/);
-    assert.match(text, /Dadar West, Mumbai/);
-    assert.match(text, /Bandra West, Mumbai/);
-    assert.match(text, /Ravi Menon/);
-    assert.match(text, /MH02AB1234/);
-    assert.match(text, /27AAAAA0000A1Z5/);
-    assert.match(text, /486\.00/);
-    if (style === 'uber') assert.match(text, /Thanks for riding, Anjali Shah/);
-    if (style === 'ola') {
-      assert.match(text, /TRIP RECEIPT/);
-      assert.match(text, /Anjali Shah/);
-      assert.match(text, /Paid via UPI/);
-    }
-  }
+  const res = await request('/api/receipts', { method: 'POST', json: tripInput() });
+  assert.equal(res.status, 200);
+  assert.match(res.headers.get('content-type'), /application\/pdf/);
+  assert.match(res.headers.get('content-disposition'), /Cabby-CB261006-123456\.pdf/);
+  const pdf = Buffer.from(await res.arrayBuffer());
+  assert.equal(pdf.subarray(0, 5).toString(), '%PDF-');
+  assert.equal(pdfPages(pdf), 1);
+  const text = pdfText(pdf);
+  assert.match(text, /Harbour Line Cabs/);
+  assert.match(text, /Dadar West, Mumbai/);
+  assert.match(text, /Bandra West, Mumbai/);
+  assert.match(text, /Ravi Menon/);
+  assert.match(text, /MH02AB1234/);
+  assert.match(text, /27AAAAA0000A1Z5/);
+  assert.match(text, /462\.86/);
+  assert.match(text, /23\.14/);
+  assert.match(text, /486\.00/);
+  assert.match(text, /GST 5%/);
+  assert.match(text, /TRIP RECEIPT/);
+  assert.match(text, /Anjali Shah/);
+  assert.match(text, /Paid via UPI/);
+  assert.doesNotMatch(text, /Thanks for riding/);
 });
 
 test('requires the server PIN when APP_PIN is set', async () => {
