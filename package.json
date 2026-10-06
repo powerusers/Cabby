@@ -1,0 +1,19 @@
+{
+  "name": "cabby",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Simple cab receipt generator with downloadable ride-style PDFs.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test": "node --test --test-concurrency=1"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "pdfkit": "^0.17.2"
+  }
+}

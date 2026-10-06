@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Create a cab receipt and download it as a PDF.">
+  <meta name="theme-color" content="#e7e1d4">
+  <title>Cabby — Cab receipts</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <p id="boot" class="boot">Loading…</p>
+
+  <section id="pin-screen" class="gate hidden">
+    <div class="gate-stack">
+      <div class="brand"><span class="brand-mark" aria-hidden="true"></span> Cabby</div>
+      <div class="panel">
+        <h1>This desk is locked</h1>
+        <p class="lede">Enter the PIN set on the server to make receipts.</p>
+        <form id="pin-form" novalidate>
+          <p id="pin-error" class="alert hidden" role="alert"></p>
+          <label class="field">
+            <span>PIN</span>
+            <input id="pin" name="pin" type="password" autocomplete="current-password" required>
+          </label>
+          <button class="primary" type="submit">Continue</button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <section id="setup-screen" class="gate hidden">
+    <div class="gate-stack">
+      <div class="brand"><span class="brand-mark" aria-hidden="true"></span> Cabby</div>
+      <div id="operator-panel" class="panel">
+        <button id="close-operator" class="text-btn close-btn hidden" type="button">Close</button>
+        <h1 id="operator-title">Set up your cab</h1>
+        <p class="lede" id="operator-lede">Enter these once. They are saved on this server and printed on every receipt.</p>
+        <form id="operator-form" novalidate>
+          <p id="operator-error" class="alert hidden" role="alert"></p>
+          <div class="form-grid">
+            <label class="field span-2">
+              <span>Business name</span>
+              <input id="businessName" name="businessName" maxlength="80" autocomplete="organization" required>
+            </label>
+            <label class="field">
+              <span>Phone</span>
+              <input id="phone" name="phone" type="tel" maxlength="24" autocomplete="tel" required>
+            </label>
+            <label class="field">
+              <span>City</span>
+              <input id="city" name="city" maxlength="60" autocomplete="address-level2" required>
+            </label>
+            <label class="field">
+              <span>Driver name</span>
+              <input id="driverName" name="driverName" maxlength="80" autocomplete="name">
+            </label>
+            <label class="field">
+              <span>Vehicle</span>
+              <input id="vehicleModel" name="vehicleModel" maxlength="40" placeholder="WagonR" autocomplete="off">
+            </label>
+            <label class="field">
+              <span>Vehicle number</span>
+              <input id="vehicleNumber" name="vehicleNumber" maxlength="20" autocapitalize="characters" spellcheck="false" autocomplete="off">
+            </label>
+            <label class="field">
+              <span>Currency</span>
+              <select id="currency" name="currency">
+                <option value="INR">INR (₹)</option>
+                <option value="USD">USD ($)</option>
+                <option value="EUR">EUR (€)</option>
+                <option value="GBP">GBP (£)</option>
+                <option value="AED">AED</option>
+              </select>
+            </label>
+            <label class="field span-2">
+              <span>Address</span>
+              <input id="address" name="address" maxlength="160" autocomplete="street-address">
+            </label>
+            <label class="field">
+              <span>Email</span>
+              <input id="email" name="email" type="email" maxlength="80" autocomplete="email">
+            </label>
+            <label class="field">
+              <span>GSTIN / tax ID</span>
+              <input id="gstin" name="gstin" maxlength="20" autocapitalize="characters" spellcheck="false" autocomplete="off">
+            </label>
+          </div>
+          <button id="operator-submit" class="primary" type="submit">Save and continue</button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <div id="desk" class="desk hidden">
+    <header class="topbar">
+      <div class="brand"><span class="brand-mark" aria-hidden="true"></span> Cabby</div>
+      <button id="edit-operator" class="ghost" type="button">Operator</button>
+    </header>
+    <main class="workspace">
+      <section class="panel composer">
+        <h1>New receipt</h1>
+        <p class="lede">Pickup, drop, distance, and total. Download a PDF when the preview looks right.</p>
+        <form id="trip-form" novalidate>
+          <fieldset class="segment">
+            <legend class="sr">Receipt style</legend>
+            <label>
+              <input type="radio" name="style" value="ola" checked>
+              <span>Ola style</span>
+            </label>
+            <label>
+              <input type="radio" name="style" value="uber">
+              <span>Uber style</span>
+            </label>
+          </fieldset>
+          <p class="hint">The layout changes. The receipt is issued in your business name.</p>
+          <p id="trip-error" class="alert hidden" role="alert"></p>
+          <label class="field">
+            <span>Pickup</span>
+            <input id="source" name="source" maxlength="160" autocomplete="off" required placeholder="Dadar West, Mumbai">
+          </label>
+          <label class="field">
+            <span>Drop</span>
+            <input id="destination" name="destination" maxlength="160" autocomplete="off" required placeholder="Bandra West, Mumbai">
+          </label>
+          <div class="grid-2">
+            <label class="field">
+              <span>Distance</span>
+              <span class="with-suffix">
+                <input id="distanceKm" name="distanceKm" type="number" inputmode="decimal" min="0.1" max="5000" step="0.1" required placeholder="0.0">
+                <span class="suffix">km</span>
+              </span>
+            </label>
+            <label class="field">
+              <span>Total amount</span>
+              <span class="with-prefix">
+                <span id="amount-prefix" class="prefix">₹</span>
+                <input id="amount" name="amount" type="number" inputmode="decimal" min="0.01" max="1000000" step="0.01" required placeholder="0.00">
+              </span>
+            </label>
+          </div>
+          <label class="field">
+            <span>Date and time</span>
+            <input id="tripAt" name="tripAt" type="datetime-local" required>
+          </label>
+          <label class="field">
+            <span>Payment</span>
+            <select id="paymentMethod" name="paymentMethod">
+              <option>Cash</option>
+              <option>UPI</option>
+              <option>Card</option>
+              <option>Wallet</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Rider name (optional)</span>
+            <input id="customerName" name="customerName" maxlength="80" autocomplete="off">
+          </label>
+          <div class="actions">
+            <button id="download" class="primary" type="submit">Download PDF</button>
+            <button id="clear-trip" class="text-btn" type="button">Clear trip</button>
+          </div>
+          <p id="trip-status" class="status" role="status"></p>
+        </form>
+        <p class="footnote">Operator details stay on this server for the next receipt.</p>
+      </section>
+      <section class="stage" aria-label="Receipt preview">
+        <div class="ticket-wrap">
+          <p class="stage-label">Preview</p>
+          <article id="receipt" class="ticket ola" aria-live="polite">
+            <header class="ticket-top">
+              <div>
+                <p id="prev-name" class="wordmark">Your cab</p>
+                <p class="ticket-kicker">Trip receipt</p>
+              </div>
+              <p id="prev-id" class="ticket-id"></p>
+            </header>
+            <div class="accent" aria-hidden="true"></div>
+            <div class="ticket-body">
+              <p id="prev-thanks" class="thanks">Thanks for riding</p>
+              <p id="prev-when" class="when"></p>
+              <div class="route">
+                <div class="route-stop">
+                  <span class="dot pickup" aria-hidden="true"></span>
+                  <div>
+                    <p id="prev-pickup-label" class="stop-label">Pickup</p>
+                    <p id="prev-source" class="stop-name is-placeholder">Pickup location</p>
+                  </div>
+                </div>
+                <div class="route-stop">
+                  <span class="dot drop" aria-hidden="true"></span>
+                  <div>
+                    <p id="prev-drop-label" class="stop-label">Drop</p>
+                    <p id="prev-dest" class="stop-name is-placeholder">Drop location</p>
+                  </div>
+                </div>
+              </div>
+              <p id="prev-distance" class="km-pill">—</p>
+              <dl class="fare">
+                <div><dt>Trip fare</dt><dd id="prev-fare">—</dd></div>
+                <div class="total"><dt>Total</dt><dd id="prev-total">—</dd></div>
+              </dl>
+              <p id="prev-paid" class="paid"></p>
+              <section id="rider" class="party hidden">
+                <p class="party-label">Rider</p>
+                <p id="prev-rider" class="strong"></p>
+              </section>
+              <section id="driver" class="party hidden">
+                <p class="party-label">Driver</p>
+                <p id="prev-driver" class="strong"></p>
+                <p id="prev-vehicle" class="meta"></p>
+              </section>
+              <section class="party">
+                <p class="party-label">Billed by</p>
+                <p id="prev-biz" class="strong"></p>
+                <p id="prev-meta" class="meta"></p>
+              </section>
+              <p class="fineprint">Computer-generated receipt. Signature not required.</p>
+            </div>
+          </article>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="operator-dialog" aria-labelledby="operator-title"></dialog>
+  <script src="/format.js"></script>
+  <script src="/app.js"></script>
+  <noscript><p class="boot">Cabby needs JavaScript to generate receipts.</p></noscript>
+</body>
+</html>
