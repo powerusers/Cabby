@@ -104,20 +104,8 @@
     <main class="workspace">
       <section class="panel composer">
         <h1>New receipt</h1>
-        <p class="lede">Pickup, drop, distance, and total. Download a PDF when the preview looks right.</p>
+        <p class="lede">Pickup, drop, distance, and the amount the rider paid. Download a PDF when the preview looks right.</p>
         <form id="trip-form" novalidate>
-          <fieldset class="segment">
-            <legend class="sr">Receipt style</legend>
-            <label>
-              <input type="radio" name="style" value="ola" checked>
-              <span>Ola style</span>
-            </label>
-            <label>
-              <input type="radio" name="style" value="uber">
-              <span>Uber style</span>
-            </label>
-          </fieldset>
-          <p class="hint">The layout changes. The receipt is issued in your business name.</p>
           <p id="trip-error" class="alert hidden" role="alert"></p>
           <label class="field">
             <span>Pickup</span>
@@ -136,13 +124,14 @@
               </span>
             </label>
             <label class="field">
-              <span>Total amount</span>
+              <span>Total (incl. GST)</span>
               <span class="with-prefix">
                 <span id="amount-prefix" class="prefix">₹</span>
                 <input id="amount" name="amount" type="number" inputmode="decimal" min="0.01" max="1000000" step="0.01" required placeholder="0.00">
               </span>
             </label>
           </div>
+          <p class="hint">This amount includes 5% GST. The receipt shows the trip fare, the GST, and this total.</p>
           <label class="field">
             <span>Date and time</span>
             <input id="tripAt" name="tripAt" type="datetime-local" required>
@@ -171,7 +160,7 @@
       <section class="stage" aria-label="Receipt preview">
         <div class="ticket-wrap">
           <p class="stage-label">Preview</p>
-          <article id="receipt" class="ticket ola" aria-live="polite">
+          <article id="receipt" class="ticket" aria-live="polite">
             <header class="ticket-top">
               <div>
                 <p id="prev-name" class="wordmark">Your cab</p>
@@ -181,7 +170,6 @@
             </header>
             <div class="accent" aria-hidden="true"></div>
             <div class="ticket-body">
-              <p id="prev-thanks" class="thanks">Thanks for riding</p>
               <p id="prev-when" class="when"></p>
               <div class="route">
                 <div class="route-stop">
@@ -202,6 +190,7 @@
               <p id="prev-distance" class="km-pill">—</p>
               <dl class="fare">
                 <div><dt>Trip fare</dt><dd id="prev-fare">—</dd></div>
+                <div><dt>GST 5%</dt><dd id="prev-gst">—</dd></div>
                 <div class="total"><dt>Total</dt><dd id="prev-total">—</dd></div>
               </dl>
               <p id="prev-paid" class="paid"></p>

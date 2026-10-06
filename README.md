@@ -1,15 +1,15 @@
 # Cabby
 
-Cabby is a small desk for a cab operator. Enter your business details once, then fill in a trip and download an Ola-style or Uber-style receipt as a PDF. The receipt is issued in your business name.
+Cabby is a small desk for a cab operator. Enter your business details once, then fill in a trip and download a receipt PDF. The receipt is issued in your business name.
 
 A trip needs:
 
 - Pickup
 - Drop
 - Distance in km
-- Total amount
+- Total amount, including 5% GST
 
-Date, payment method, and rider name are optional extras. The preview updates as you type.
+The receipt splits that total into the trip fare and GST. Date, payment method, and rider name are optional. The preview updates as you type.
 
 ## Run locally
 
@@ -47,8 +47,8 @@ Use one replica. The details are a single file, not a shared database.
 | `DATA_DIR` | Folder for `operator.json`. Defaults to `./data`. |
 | `APP_PIN` | Optional lock for the whole desk. |
 
-## Receipt styles
+## What the receipt shows
 
-**Ola style** uses a dark header, a lime bar, and a compact fare block. **Uber style** uses an open layout with a thank-you line and a payments row. Both show your business, driver, vehicle, pickup, drop, distance, and total.
+Pickup, drop, distance, date, trip fare, 5% GST, and the total. It also shows the driver, vehicle, payment, and your business details, including GSTIN when you have entered one. The amount you type is the total the rider paid. Trip fare is that total with the GST taken out, and trip fare plus GST equals the total.
 
 The Inter font shipped in `fonts/` is licensed under the SIL Open Font License. See `fonts/OFL.txt`.

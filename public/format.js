@@ -22,19 +22,15 @@
     }).format(Number(amount) || 0);
   }
 
-  function formatDistance(km, style) {
+  function formatDistance(km) {
     const value = Number(km) || 0;
     const text = new Intl.NumberFormat('en-IN', {
       maximumFractionDigits: 1,
     }).format(value);
-    if (style === 'uber') {
-      const unit = value === 1 ? 'kilometer' : 'kilometers';
-      return `${text} ${unit}`;
-    }
     return `${text} km`;
   }
 
-  function formatWhen(iso, timeZone, style) {
+  function formatWhen(iso, timeZone) {
     const date = new Date(iso);
     const tz = timeZone || 'UTC';
     const time = new Intl.DateTimeFormat('en-US', {
@@ -43,16 +39,6 @@
       minute: '2-digit',
       hour12: true,
     }).format(date);
-    if (style === 'uber') {
-      const day = new Intl.DateTimeFormat('en-GB', {
-        timeZone: tz,
-        weekday: 'long',
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-      }).format(date);
-      return { day, time, line: `${day}\n${time}` };
-    }
     const day = new Intl.DateTimeFormat('en-GB', {
       timeZone: tz,
       weekday: 'short',
@@ -61,6 +47,21 @@
       year: 'numeric',
     }).format(date);
     return { day, time, line: `${day} · ${time}` };
+  }
+
+  // The amount entered is the total, already including 5% GST.
+  function splitFare(totalInclusive) {
+    const totalPaise = Math.round(Number(totalInclusive) * 100);
+    if (!Number.isFinite(totalPaise)) {
+      return { tripFare: 0, gst: 0, total: 0 };
+    }
+    const tripPaise = Math.round((totalPaise * 100) / 105);
+    const gstPaise = totalPaise - tripPaise;
+    return {
+      tripFare: tripPaise / 100,
+      gst: gstPaise / 100,
+      total: totalPaise / 100,
+    };
   }
 
   function makeReceiptId(date = new Date()) {
@@ -80,6 +81,7 @@
     formatMoney,
     formatDistance,
     formatWhen,
+    splitFare,
     makeReceiptId,
     currencyPrefix,
   };
